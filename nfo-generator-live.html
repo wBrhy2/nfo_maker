@@ -389,6 +389,24 @@
             background: var(--accent-secondary);
         }
 
+        .amend-action-select {
+            padding: 0.875rem 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .amend-action-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
@@ -436,10 +454,14 @@
             </div>
             <div class="form-group">
                 <label for="existingFilesAction">Existing NFO Files</label>
-                <select id="existingFilesAction" style="width: 100%; padding: 0.875rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.95rem;">
+                <select id="existingFilesAction" style="width: 100%; padding: 0.875rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.95rem;" onchange="updateAmendInfo()">
                     <option value="skip">Skip (keep existing)</option>
                     <option value="replace">Replace (overwrite existing)</option>
+                    <option value="amend">Amend (upsert selected optional tags)</option>
                 </select>
+            </div>
+            <div class="info-box" id="amendInfo" style="display: none;">
+                ✏️ Amend Mode: For each video file with an existing NFO, the selected optional tags will be inserted if absent or replaced if already present. Files with no existing NFO are skipped. Required/default tags are never touched.
             </div>
             <div class="recursive-toggle">
                 <input type="checkbox" id="multiShowCheck" />
@@ -528,28 +550,64 @@
             </div>
             <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
                 <div class="form-group" id="airedValueGroup" style="display: none; margin-bottom: 0;">
-                    <label for="defaultAired">Default Aired Date (applied to all files)</label>
-                    <input type="text" id="defaultAired" placeholder="e.g. 2024-01-01" />
+                    <label for="defaultAired">Default Aired Date</label>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <input type="text" id="defaultAired" placeholder="e.g. 2024-01-01" style="flex: 1;" />
+                        <select id="airedAmendAction" class="amend-action-select">
+                            <option value="replace">Replace if exists</option>
+                            <option value="skip">Skip if exists</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group" id="ratingValueGroup" style="display: none; margin-bottom: 0;">
-                    <label for="defaultRating">Default Rating (applied to all files)</label>
-                    <input type="text" id="defaultRating" placeholder="e.g. 8.0" />
+                    <label for="defaultRating">Default Rating</label>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <input type="text" id="defaultRating" placeholder="e.g. 8.0" style="flex: 1;" />
+                        <select id="ratingAmendAction" class="amend-action-select">
+                            <option value="replace">Replace if exists</option>
+                            <option value="skip">Skip if exists</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group" id="runtimeValueGroup" style="display: none; margin-bottom: 0;">
-                    <label for="defaultRuntime">Default Runtime in minutes (applied to all files)</label>
-                    <input type="text" id="defaultRuntime" placeholder="e.g. 45" />
+                    <label for="defaultRuntime">Default Runtime (minutes)</label>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <input type="text" id="defaultRuntime" placeholder="e.g. 45" style="flex: 1;" />
+                        <select id="runtimeAmendAction" class="amend-action-select">
+                            <option value="replace">Replace if exists</option>
+                            <option value="skip">Skip if exists</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group" id="directorValueGroup" style="display: none; margin-bottom: 0;">
-                    <label for="defaultDirector">Default Director (applied to all files)</label>
-                    <input type="text" id="defaultDirector" placeholder="e.g. Director Name" />
+                    <label for="defaultDirector">Default Director</label>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <input type="text" id="defaultDirector" placeholder="e.g. Director Name" style="flex: 1;" />
+                        <select id="directorAmendAction" class="amend-action-select">
+                            <option value="replace">Replace if exists</option>
+                            <option value="skip">Skip if exists</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group" id="writerValueGroup" style="display: none; margin-bottom: 0;">
-                    <label for="defaultWriter">Default Writer (applied to all files)</label>
-                    <input type="text" id="defaultWriter" placeholder="e.g. Writer Name" />
+                    <label for="defaultWriter">Default Writer</label>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <input type="text" id="defaultWriter" placeholder="e.g. Writer Name" style="flex: 1;" />
+                        <select id="writerAmendAction" class="amend-action-select">
+                            <option value="replace">Replace if exists</option>
+                            <option value="skip">Skip if exists</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group" id="mpaaValueGroup" style="display: none; margin-bottom: 0;">
-                    <label for="defaultMpaa">Default TV Rating (applied to all files)</label>
-                    <input type="text" id="defaultMpaa" placeholder="e.g. TV-G, TV-PG, TV-14, TV-MA..." />
+                    <label for="defaultMpaa">Default TV Rating</label>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <input type="text" id="defaultMpaa" placeholder="e.g. TV-G, TV-PG, TV-14, TV-MA..." style="flex: 1;" />
+                        <select id="mpaaAmendAction" class="amend-action-select">
+                            <option value="replace">Replace if exists</option>
+                            <option value="skip">Skip if exists</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -869,6 +927,92 @@
             }
         }
 
+        const OPTIONAL_FIELDS = ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
+
+        function getOptionalFieldValue(field) {
+            const map = {
+                aired:    () => document.getElementById('defaultAired').value    || '2024-01-01',
+                rating:   () => document.getElementById('defaultRating').value   || '8.0',
+                runtime:  () => document.getElementById('defaultRuntime').value  || '45',
+                director: () => document.getElementById('defaultDirector').value || 'Director Name',
+                writer:   () => document.getElementById('defaultWriter').value   || 'Writer Name',
+                mpaa:     () => document.getElementById('defaultMpaa').value     || 'TV-PG',
+            };
+            return map[field] ? map[field]() : null;
+        }
+
+        async function amendNFOFile(dirHandle, nfoFilename, fieldsToAmend, path) {
+            let fileHandle;
+            try {
+                fileHandle = await dirHandle.getFileHandle(nfoFilename);
+            } catch (err) {
+                log(`Skipped: ${path}${nfoFilename} (no existing NFO)`, 'warning');
+                return;
+            }
+
+            const file = await fileHandle.getFile();
+            let content = await file.text();
+
+            if (!content.includes('</episodedetails>')) {
+                log(`Skipped: ${path}${nfoFilename} (not a recognised episode NFO)`, 'warning');
+                return;
+            }
+
+            const actions = [];
+
+            for (const field of fieldsToAmend) {
+                const value = getOptionalFieldValue(field);
+                if (value === null) continue;
+
+                const fieldAction = document.getElementById(`${field}AmendAction`)?.value || 'replace';
+                const tagRegex = new RegExp(`<${field}>[^<]*<\\/${field}>`, 'i');
+                const newTag = `<${field}>${value}</${field}>`;
+
+                if (tagRegex.test(content)) {
+                    if (fieldAction === 'replace') {
+                        content = content.replace(tagRegex, newTag);
+                        actions.push(`replaced <${field}>`);
+                    }
+                    // else: skip — tag already present, leave it untouched
+                } else {
+                    content = content.replace('</episodedetails>', `    ${newTag}\n</episodedetails>`);
+                    actions.push(`added <${field}>`);
+                }
+            }
+
+            if (actions.length === 0) {
+                log(`No changes: ${path}${nfoFilename}`, 'info');
+                return;
+            }
+
+            const writable = await fileHandle.createWritable();
+            await writable.write(content);
+            await writable.close();
+            log(`Amended: ${path}${nfoFilename} (${actions.join(', ')})`, 'success');
+        }
+
+        async function processDirectoryAmend(dirHandle, fieldsToAmend, recursive, path = '') {
+            const entries = [];
+
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const extension = entry.name.split('.').pop().toLowerCase();
+                    if (VIDEO_EXTENSIONS.includes(extension)) {
+                        entries.push(entry);
+                    }
+                } else if (entry.kind === 'directory' && recursive) {
+                    await processDirectoryAmend(entry, fieldsToAmend, recursive, path + entry.name + '/');
+                }
+            }
+
+            entries.sort((a, b) => a.name.localeCompare(b.name));
+
+            for (const entry of entries) {
+                const basename = entry.name.substring(0, entry.name.lastIndexOf('.'));
+                await amendNFOFile(dirHandle, basename + '.nfo', fieldsToAmend, path);
+            }
+        }
+
         async function generateNFOFiles() {
             if (!selectedFolderHandle) {
                 alert('Please select a folder first!');
@@ -889,7 +1033,9 @@
                 const fields = getSelectedFields();
                 const showTitle = document.getElementById('showTitle').value || 'Series Title';
                 const multiShow = document.getElementById('multiShowCheck').checked;
-                const skipExisting = document.getElementById('existingFilesAction').value === 'skip';
+                const action = document.getElementById('existingFilesAction').value;
+                const amendMode = action === 'amend';
+                const skipExisting = action === 'skip';
                 const createTvShowNfo = document.getElementById('createTvShowNfo').checked;
 
                 if (fields.length === 0) {
@@ -897,36 +1043,56 @@
                     return;
                 }
 
-                log(`Starting NFO generation...`, 'info');
-                log(`Folder: ${selectedFolderHandle.name}`, 'info');
-                log(`Default Season: ${defaultSeason}`, 'info');
-                if (!multiShow) {
-                    log(`Show Title: ${showTitle}`, 'info');
+                // In amend mode only optional fields make sense
+                const fieldsToAmend = fields.filter(f => OPTIONAL_FIELDS.includes(f));
+                if (amendMode && fieldsToAmend.length === 0) {
+                    alert('Amend mode requires at least one optional field (Aired, Rating, Runtime, Director, Writer, or TV Rating) to be selected.');
+                    return;
                 }
-                log(`Multi-Show Mode: ${multiShow}`, 'info');
-                log(`Create tvshow.nfo: ${createTvShowNfo}`, 'info');
-                log(`Existing Files: ${skipExisting ? 'Skip' : 'Replace'}`, 'info');
+
+                log(`Starting NFO ${amendMode ? 'amend' : 'generation'}...`, 'info');
+                log(`Folder: ${selectedFolderHandle.name}`, 'info');
+                if (amendMode) {
+                    log(`Amend fields: ${fieldsToAmend.join(', ')}`, 'info');
+                } else {
+                    log(`Default Season: ${defaultSeason}`, 'info');
+                    if (!multiShow) log(`Show Title: ${showTitle}`, 'info');
+                    log(`Multi-Show Mode: ${multiShow}`, 'info');
+                    log(`Create tvshow.nfo: ${createTvShowNfo}`, 'info');
+                    log(`Existing Files: ${skipExisting ? 'Skip' : 'Replace'}`, 'info');
+                    log(`Fields: ${fields.join(', ')}`, 'info');
+                }
                 log(`Recursive: ${recursive}`, 'info');
-                log(`Fields: ${fields.join(', ')}`, 'info');
                 log('---', 'info');
 
                 progressFill.style.width = '50%';
 
-                if (multiShow) {
+                if (amendMode) {
+                    if (multiShow) {
+                        for await (const entry of selectedFolderHandle.values()) {
+                            if (entry.kind === 'directory') {
+                                log(`Processing show: ${entry.name}`, 'info');
+                                await processDirectoryAmend(entry, fieldsToAmend, recursive, entry.name + '/');
+                            }
+                        }
+                    } else {
+                        await processDirectoryAmend(selectedFolderHandle, fieldsToAmend, recursive);
+                    }
+                } else if (multiShow) {
                     await processMultiShowFolder(selectedFolderHandle, defaultSeason, fields, recursive, skipExisting, createTvShowNfo);
                 } else {
                     // Create tvshow.nfo for single show mode
                     if (createTvShowNfo) {
                         await createTvShowNFO(selectedFolderHandle, showTitle, skipExisting);
                     }
-                    
+
                     const episodeCounters = {};
                     await processDirectory(selectedFolderHandle, defaultSeason, fields, episodeCounters, recursive, '', showTitle, skipExisting, 0);
                 }
 
                 progressFill.style.width = '100%';
                 log('---', 'info');
-                log('NFO generation complete!', 'success');
+                log(amendMode ? 'NFO amend complete!' : 'NFO generation complete!', 'success');
 
             } catch (err) {
                 log(`Error: ${err.message}`, 'error');
@@ -937,6 +1103,11 @@
                     progressFill.style.width = '0%';
                 }, 1000);
             }
+        }
+
+        function updateAmendInfo() {
+            const isAmend = document.getElementById('existingFilesAction').value === 'amend';
+            document.getElementById('amendInfo').style.display = isAmend ? 'block' : 'none';
         }
 
         // Check browser compatibility on load
@@ -1007,7 +1178,9 @@
             const fields = getSelectedFields();
             const showTitle = document.getElementById('showTitle').value || 'Series Title';
             const multiShow = document.getElementById('multiShowCheck').checked;
-            const skipExisting = document.getElementById('existingFilesAction').value === 'skip';
+            const action = document.getElementById('existingFilesAction').value;
+            const amendMode = action === 'amend';
+            const skipExisting = action === 'skip';
             const createTvShowNfo = document.getElementById('createTvShowNfo').checked;
 
             if (fields.length === 0) {
@@ -1015,6 +1188,109 @@
                 return null;
             }
 
+            // --- Amend mode: generate a dedicated amend script ---
+            if (amendMode) {
+                const fieldsToAmend = fields.filter(f => OPTIONAL_FIELDS.includes(f));
+                if (fieldsToAmend.length === 0) {
+                    alert('Amend mode requires at least one optional field to be selected.');
+                    return null;
+                }
+
+                // Build the per-field amend logic
+                let amendLogic = '';
+                fieldsToAmend.forEach(field => {
+                    const value = getOptionalFieldValue(field);
+                    const fieldAction = document.getElementById(`${field}AmendAction`)?.value || 'replace';
+                    if (fieldAction === 'replace') {
+                        amendLogic += `
+    # Amend <${field}> (replace if exists, add if absent)
+    if grep -qi '<${field}>' "$nfo_file"; then
+        sed -i 's|<${field}>[^<]*<\\/${field}>|<${field}>${value}<\\/${field}>|i' "$nfo_file"
+        actions="$actions replaced:<${field}>"
+    else
+        sed -i 's|<\\/episodedetails>|    <${field}>${value}<\\/${field}>\\n<\\/episodedetails>|' "$nfo_file"
+        actions="$actions added:<${field}>"
+    fi`;
+                    } else {
+                        amendLogic += `
+    # Amend <${field}> (skip if exists, add if absent)
+    if grep -qi '<${field}>' "$nfo_file"; then
+        : # tag already present, skipping
+    else
+        sed -i 's|<\\/episodedetails>|    <${field}>${value}<\\/${field}>\\n<\\/episodedetails>|' "$nfo_file"
+        actions="$actions added:<${field}>"
+    fi`;
+                    }
+                });
+
+                return `#!/bin/bash
+
+# NFO Amend Script
+# Generated by Jellyfin NFO Generator
+# Mode: Amend — upserts selected optional tags in existing NFO files
+
+SCRIPT_DIR="$( cd "$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+FOLDER_PATH="."
+RECURSIVE=${recursive ? 'true' : 'false'}
+MULTI_SHOW=${multiShow ? 'true' : 'false'}
+VIDEO_EXTENSIONS="mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|m2ts|ts"
+
+if [[ "$FOLDER_PATH" = /* ]]; then TARGET_PATH="$FOLDER_PATH"
+else TARGET_PATH="$SCRIPT_DIR/$FOLDER_PATH"; fi
+
+if [ ! -d "$TARGET_PATH" ]; then echo "Error: '$TARGET_PATH' does not exist"; exit 1; fi
+
+echo "Amending NFOs in: $TARGET_PATH"
+echo "Fields: ${fieldsToAmend.join(', ')}"
+echo "---"
+
+count=0; skipped=0
+
+amend_nfo() {
+    local nfo_file="$1"
+    local actions=""
+${amendLogic}
+    if [ -n "$actions" ]; then
+        echo "Amended: $(basename "$nfo_file") ($actions)"
+        ((count++))
+    else
+        echo "No changes: $(basename "$nfo_file")"
+    fi
+}
+
+process_directory() {
+    local search_path="$1"
+    if [ "$RECURSIVE" = true ]; then
+        find_cmd="find \\"$search_path\\" -type f -regextype posix-extended -iregex \\".*\\.($VIDEO_EXTENSIONS)$\\""
+    else
+        find_cmd="find \\"$search_path\\" -maxdepth 1 -type f -regextype posix-extended -iregex \\".*\\.($VIDEO_EXTENSIONS)$\\""
+    fi
+    eval "$find_cmd" | sort | while read -r video_file; do
+        nfo_file="\${video_file%.*}.nfo"
+        if [ ! -f "$nfo_file" ]; then
+            echo "Skipped: $(basename "$nfo_file") (no existing NFO)"
+            ((skipped++))
+            continue
+        fi
+        amend_nfo "$nfo_file"
+    done
+}
+
+if [ "$MULTI_SHOW" = true ]; then
+    for show_dir in "$TARGET_PATH"/*; do
+        [ -d "$show_dir" ] && { echo "Processing show: $(basename "$show_dir")"; process_directory "$show_dir"; }
+    done
+else
+    process_directory "$TARGET_PATH"
+fi
+
+echo "---"
+echo "Total amended: $count"
+[ $skipped -gt 0 ] && echo "Total skipped: $skipped"
+`;
+            }
+
+            // --- Normal create/replace/skip mode ---
             // Generate NFO template for bash script
             let nfoTemplate = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\\n<episodedetails>\\n';
             
