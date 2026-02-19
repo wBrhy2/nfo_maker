@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jellyfin NFO Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-card: #141923;
+            --accent-primary: #00ff88;
+            --accent-secondary: #00d4ff;
+            --text-primary: #e8edf4;
+            --text-secondary: #8892a6;
+            --border: #1f2937;
+            --shadow: rgba(0, 255, 136, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.05) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            margin-bottom: 3rem;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px var(--shadow);
+            transition: all 0.3s ease;
+            animation: cardSlide 0.6s ease-out backwards;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+        .card:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes cardSlide {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 6px 30px rgba(0, 255, 136, 0.15);
+        }
+
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '▸';
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+        }
+
+        .folder-selector {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .folder-selector input {
+            flex: 1;
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 8px;
+            color: var(--bg-dark);
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.3s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-dark);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-item:hover {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            text-transform: none;
+            letter-spacing: normal;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .checkbox-item input[type="checkbox"]:checked + label {
+            color: var(--accent-primary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+        }
+
+        .output {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: var(--accent-primary);
+        }
+
+        .output:empty::before {
+            content: 'Select a folder and click "Generate NFO Files" to start...';
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        #bashScriptOutput:empty::before {
+            content: 'Click "Generate Bash Script" to create the script...';
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        #nfoPreview {
+            color: var(--text-primary);
+        }
+
+        #tvshowPreview {
+            color: var(--text-primary);
+        }
+
+        .info-box {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--accent-secondary);
+            line-height: 1.6;
+        }
+
+        .warning-box {
+            background: rgba(255, 200, 0, 0.1);
+            border: 1px solid rgba(255, 200, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: #ffc800;
+            line-height: 1.6;
+        }
+
+        .recursive-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .recursive-toggle input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        .recursive-toggle label {
+            margin: 0;
+            cursor: pointer;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: 0.95rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-dark);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .progress-bar.active {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* Custom scrollbar */
+        .output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .output::-webkit-scrollbar-track {
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+
+        .output::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 4px;
+        }
+
+        .output::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-secondary);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .checkbox-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NFO Generator</h1>
+            <p class="subtitle">Create Jellyfin metadata files for your media library</p>
+        </header>
+
+        <div class="card">
+            <h2 class="section-title">Folder Selection</h2>
+            <div class="info-box">
+                💡 Select the folder containing your video files. The generator will process all video formats (mp4, mkv, avi, mov, etc.)
+            </div>
+            <div class="warning-box">
+                ⚠️ This tool requires Chrome/Edge browser with File System Access API support
+            </div>
+            <div class="form-group">
+                <label for="folderPath">Selected Folder</label>
+                <div class="folder-selector">
+                    <input type="text" id="folderPath" placeholder="No folder selected" readonly />
+                    <button class="btn btn-secondary" onclick="selectFolder()">Browse</button>
+                </div>
+            </div>
+            <div class="recursive-toggle">
+                <input type="checkbox" id="recursiveCheck" checked />
+                <label for="recursiveCheck">Scan subfolders recursively</label>
+            </div>
+            <div class="form-group">
+                <label for="existingFilesAction">Existing NFO Files</label>
+                <select id="existingFilesAction" style="width: 100%; padding: 0.875rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.95rem;">
+                    <option value="skip">Skip (keep existing)</option>
+                    <option value="replace">Replace (overwrite existing)</option>
+                </select>
+            </div>
+            <div class="recursive-toggle">
+                <input type="checkbox" id="multiShowCheck" />
+                <label for="multiShowCheck">First-level directories are separate shows</label>
+            </div>
+            <div class="info-box" id="multiShowInfo" style="display: none; margin-top: 1rem;">
+                📁 Multi-Show Mode: Each first-level folder will be treated as a separate show. The folder name will be used as the show title for all episodes within that folder and its subfolders.
+            </div>
+            <div class="form-group">
+                <label for="defaultSeason">Default Season Number</label>
+                <input type="number" id="defaultSeason" value="1" min="1" />
+            </div>
+            <div class="form-group" id="showTitleGroup">
+                <label for="showTitle">Show Title</label>
+                <input type="text" id="showTitle" placeholder="Enter show title..." />
+            </div>
+            <div class="recursive-toggle" id="useFolderNameGroup">
+                <input type="checkbox" id="useFolderNameCheck" />
+                <label for="useFolderNameCheck">Use selected folder name as show title</label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">NFO Fields</h2>
+            <div class="info-box">
+                ✓ Select which fields to include in the generated NFO files<br>
+                📁 tvshow.nfo: Creates a series-level metadata file in each show's root directory (recommended for Jellyfin)
+            </div>
+            <div class="recursive-toggle" style="margin-bottom: 1rem;">
+                <input type="checkbox" id="createTvShowNfo" />
+                <label for="createTvShowNfo">Create tvshow.nfo file for each series</label>
+            </div>
+            <div class="checkbox-grid">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_title" checked disabled />
+                    <label for="field_title">Title (Required)</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_season" checked />
+                    <label for="field_season">Season</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_episode" checked />
+                    <label for="field_episode">Episode</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_displayseason" checked />
+                    <label for="field_displayseason">Display Season</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_displayepisode" checked />
+                    <label for="field_displayepisode">Display Episode</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_showtitle" checked />
+                    <label for="field_showtitle">Show Title</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_plot" checked />
+                    <label for="field_plot">Plot</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_aired" />
+                    <label for="field_aired">Aired Date</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_rating" />
+                    <label for="field_rating">Rating</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_runtime" />
+                    <label for="field_runtime">Runtime</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_director" />
+                    <label for="field_director">Director</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_writer" />
+                    <label for="field_writer">Writer</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">NFO Preview</h2>
+            <div class="info-box">
+                📄 This is what your NFO files will look like based on selected fields
+            </div>
+            <div class="form-group">
+                <label>Episode NFO File Format</label>
+                <div class="output" id="nfoPreview"></div>
+            </div>
+            <div class="form-group" id="tvshowPreviewGroup" style="display: none; margin-top: 1.5rem;">
+                <label>tvshow.nfo File Format</label>
+                <div class="output" id="tvshowPreview"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">Generate</h2>
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn" onclick="generateNFOFiles()" id="generateBtn">🚀 Generate NFO Files</button>
+                <button class="btn btn-secondary" onclick="clearOutput()">🗑️ Clear Output</button>
+            </div>
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label>Output Log</label>
+                <div class="output" id="output"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">Bash Script (Optional)</h2>
+            <div class="info-box">
+                💻 For Linux/Mac users: Generate and download this bash script to run on your server or local machine. Perfect for automated workflows or systems without a browser.
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="generateBashScript()">📝 Generate Bash Script</button>
+                <button class="btn btn-secondary" onclick="downloadBashScript()">💾 Download Script</button>
+                <button class="btn btn-secondary" onclick="copyBashScript()">📋 Copy Script</button>
+            </div>
+            <div class="form-group" style="margin-top: 1.5rem;">
+                <label>Generated Bash Script</label>
+                <div class="output" id="bashScriptOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFolderHandle = null;
+        const VIDEO_EXTENSIONS = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', 'm2ts', 'ts'];
+
+        async function selectFolder() {
+            try {
+                // Check if File System Access API is supported
+                if (!window.showDirectoryPicker) {
+                    alert('Your browser does not support the File System Access API. Please use Chrome or Edge.');
+                    return;
+                }
+
+                // Configure picker options
+                const pickerOpts = {
+                    mode: 'readwrite'
+                };
+
+                // If we have a previously selected folder, start from there
+                if (selectedFolderHandle) {
+                    pickerOpts.startIn = selectedFolderHandle;
+                }
+
+                selectedFolderHandle = await window.showDirectoryPicker(pickerOpts);
+                
+                document.getElementById('folderPath').value = selectedFolderHandle.name;
+                
+                // Update show title if checkbox is checked
+                if (document.getElementById('useFolderNameCheck').checked) {
+                    document.getElementById('showTitle').value = selectedFolderHandle.name;
+                    updateNFOPreview();
+                }
+                
+                log(`Selected folder: ${selectedFolderHandle.name}`, 'info');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    log(`Error selecting folder: ${err.message}`, 'error');
+                }
+            }
+        }
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            output.textContent += `${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+        }
+
+        function getSelectedFields() {
+            const fields = ['title', 'season', 'episode', 'displayseason', 'displayepisode', 
+                          'showtitle', 'plot', 'aired', 'rating', 'runtime', 'director', 'writer'];
+            return fields.filter(field => {
+                const checkbox = document.getElementById(`field_${field}`);
+                return checkbox && checkbox.checked;
+            });
+        }
+
+        function extractEpisodeNumber(filename) {
+            // Try E01, e01, Episode 01 patterns
+            let match = filename.match(/(?:e|ep|episode)\s*0*(\d+)/i);
+            if (match) return parseInt(match[1]);
+            
+            // Try S01E01 pattern
+            match = filename.match(/s\d+e0*(\d+)/i);
+            if (match) return parseInt(match[1]);
+            
+            // Try numbers at the end
+            match = filename.match(/(\d+)$/);
+            if (match) return parseInt(match[1]);
+            
+            return null;
+        }
+
+        function extractSeasonNumber(dirName) {
+            const match = dirName.match(/(?:season|s)\s*0*(\d+)/i);
+            return match ? parseInt(match[1]) : null;
+        }
+
+        function generateNFOContent(filename, season, episode, fields, showTitle = 'Series Title') {
+            let content = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<episodedetails>\n';
+            
+            fields.forEach(field => {
+                if (field === 'title') {
+                    content += `    <title>${filename}</title>\n`;
+                } else if (field === 'season') {
+                    content += `    <season>${season}</season>\n`;
+                } else if (field === 'episode') {
+                    content += `    <episode>${episode}</episode>\n`;
+                } else if (field === 'displayseason') {
+                    content += `    <displayseason>${season}</displayseason>\n`;
+                } else if (field === 'displayepisode') {
+                    content += `    <displayepisode>${episode}</displayepisode>\n`;
+                } else if (field === 'showtitle') {
+                    content += `    <showtitle>${showTitle}</showtitle>\n`;
+                } else if (field === 'plot') {
+                    content += `    <plot>enter plot here</plot>\n`;
+                } else if (field === 'aired') {
+                    content += `    <aired>2024-01-01</aired>\n`;
+                } else if (field === 'rating') {
+                    content += `    <rating>8.0</rating>\n`;
+                } else if (field === 'runtime') {
+                    content += `    <runtime>45</runtime>\n`;
+                } else if (field === 'director') {
+                    content += `    <director>Director Name</director>\n`;
+                } else if (field === 'writer') {
+                    content += `    <writer>Writer Name</writer>\n`;
+                }
+            });
+            
+            content += '</episodedetails>';
+            return content;
+        }
+
+        function updateNFOPreview() {
+            const fields = getSelectedFields();
+            const defaultSeason = parseInt(document.getElementById('defaultSeason').value) || 1;
+            const multiShow = document.getElementById('multiShowCheck').checked;
+            const createTvShowNfo = document.getElementById('createTvShowNfo').checked;
+            const showTitle = multiShow ? 'Folder Name' : (document.getElementById('showTitle').value || 'Series Title');
+            
+            // Update episode NFO preview
+            const preview = generateNFOContent('Episode Title', defaultSeason, 1, fields, showTitle);
+            document.getElementById('nfoPreview').textContent = preview;
+            
+            // Update tvshow.nfo preview and visibility
+            const tvshowPreviewGroup = document.getElementById('tvshowPreviewGroup');
+            const tvshowPreview = document.getElementById('tvshowPreview');
+            
+            if (createTvShowNfo) {
+                tvshowPreviewGroup.style.display = 'block';
+                tvshowPreview.textContent = generateTvShowNFO(showTitle);
+            } else {
+                tvshowPreviewGroup.style.display = 'none';
+            }
+        }
+
+        function generateTvShowNFO(showTitle) {
+            return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<tvshow>
+    <title>${showTitle}</title>
+</tvshow>`;
+        }
+
+        async function createTvShowNFO(dirHandle, showTitle, skipExisting) {
+            const tvshowFilename = 'tvshow.nfo';
+            
+            // Check if tvshow.nfo already exists
+            if (skipExisting) {
+                try {
+                    await dirHandle.getFileHandle(tvshowFilename);
+                    log(`Skipped: tvshow.nfo in ${dirHandle.name} (already exists)`, 'warning');
+                    return;
+                } catch (err) {
+                    // File doesn't exist, proceed with creation
+                }
+            }
+            
+            try {
+                const nfoHandle = await dirHandle.getFileHandle(tvshowFilename, { create: true });
+                const writable = await nfoHandle.createWritable();
+                await writable.write(generateTvShowNFO(showTitle));
+                await writable.close();
+                
+                log(`Created: tvshow.nfo in ${dirHandle.name} (Show: ${showTitle})`, 'success');
+            } catch (err) {
+                log(`Error creating tvshow.nfo in ${dirHandle.name}: ${err.message}`, 'error');
+            }
+        }
+
+        async function processDirectory(dirHandle, defaultSeason, fields, episodeCounters, recursive = true, path = '', showTitle = 'Series Title', skipExisting = false, depth = 0) {
+            const entries = [];
+            
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const extension = entry.name.split('.').pop().toLowerCase();
+                    if (VIDEO_EXTENSIONS.includes(extension)) {
+                        entries.push({ type: 'file', entry, path });
+                    }
+                } else if (entry.kind === 'directory' && recursive) {
+                    await processDirectory(entry, defaultSeason, fields, episodeCounters, recursive, path + entry.name + '/', showTitle, skipExisting, depth + 1);
+                }
+            }
+            
+            // Sort files alphabetically
+            entries.sort((a, b) => a.entry.name.localeCompare(b.entry.name));
+            
+            // Process files in this directory
+            for (const { entry, path } of entries) {
+                const filename = entry.name;
+                const basename = filename.substring(0, filename.lastIndexOf('.'));
+                
+                // Check if NFO file already exists
+                const nfoFilename = basename + '.nfo';
+                if (skipExisting) {
+                    try {
+                        await dirHandle.getFileHandle(nfoFilename);
+                        log(`Skipped: ${path}${nfoFilename} (already exists)`, 'warning');
+                        continue;
+                    } catch (err) {
+                        // File doesn't exist, proceed with creation
+                    }
+                }
+                
+                // Determine season number
+                const dirName = dirHandle.name;
+                const seasonFromDir = extractSeasonNumber(dirName);
+                const currentSeason = seasonFromDir || defaultSeason;
+                
+                // Determine episode number
+                let episodeNum = extractEpisodeNumber(basename);
+                
+                if (episodeNum === null) {
+                    // Auto-number episodes
+                    const dirKey = path + dirHandle.name;
+                    if (!episodeCounters[dirKey]) {
+                        episodeCounters[dirKey] = 1;
+                    }
+                    episodeNum = episodeCounters[dirKey]++;
+                    log(`No episode number found in '${filename}', auto-numbering as Episode ${episodeNum}`, 'warning');
+                }
+                
+                // Generate NFO content with show title
+                const nfoContent = generateNFOContent(basename, currentSeason, episodeNum, fields, showTitle);
+                
+                // Write NFO file
+                try {
+                    const nfoHandle = await dirHandle.getFileHandle(nfoFilename, { create: true });
+                    const writable = await nfoHandle.createWritable();
+                    await writable.write(nfoContent);
+                    await writable.close();
+                    
+                    log(`Created: ${path}${nfoFilename} (Season ${currentSeason}, Episode ${episodeNum})`, 'success');
+                } catch (err) {
+                    log(`Error creating NFO for ${filename}: ${err.message}`, 'error');
+                }
+            }
+        }
+
+        async function processMultiShowFolder(rootHandle, defaultSeason, fields, recursive, skipExisting, createTvShowNfo) {
+            const episodeCounters = {};
+            
+            // Process each first-level directory as a separate show
+            for await (const entry of rootHandle.values()) {
+                if (entry.kind === 'directory') {
+                    const showTitle = entry.name;
+                    log(`Processing show: ${showTitle}`, 'info');
+                    
+                    // Create tvshow.nfo if enabled
+                    if (createTvShowNfo) {
+                        await createTvShowNFO(entry, showTitle, skipExisting);
+                    }
+                    
+                    await processDirectory(entry, defaultSeason, fields, episodeCounters, recursive, entry.name + '/', showTitle, skipExisting, 0);
+                }
+            }
+        }
+
+        async function generateNFOFiles() {
+            if (!selectedFolderHandle) {
+                alert('Please select a folder first!');
+                return;
+            }
+
+            const generateBtn = document.getElementById('generateBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            
+            generateBtn.disabled = true;
+            progressBar.classList.add('active');
+            clearOutput();
+
+            try {
+                const defaultSeason = parseInt(document.getElementById('defaultSeason').value) || 1;
+                const recursive = document.getElementById('recursiveCheck').checked;
+                const fields = getSelectedFields();
+                const showTitle = document.getElementById('showTitle').value || 'Series Title';
+                const multiShow = document.getElementById('multiShowCheck').checked;
+                const skipExisting = document.getElementById('existingFilesAction').value === 'skip';
+                const createTvShowNfo = document.getElementById('createTvShowNfo').checked;
+
+                if (fields.length === 0) {
+                    alert('Please select at least one field (Title is required)');
+                    return;
+                }
+
+                log(`Starting NFO generation...`, 'info');
+                log(`Folder: ${selectedFolderHandle.name}`, 'info');
+                log(`Default Season: ${defaultSeason}`, 'info');
+                if (!multiShow) {
+                    log(`Show Title: ${showTitle}`, 'info');
+                }
+                log(`Multi-Show Mode: ${multiShow}`, 'info');
+                log(`Create tvshow.nfo: ${createTvShowNfo}`, 'info');
+                log(`Existing Files: ${skipExisting ? 'Skip' : 'Replace'}`, 'info');
+                log(`Recursive: ${recursive}`, 'info');
+                log(`Fields: ${fields.join(', ')}`, 'info');
+                log('---', 'info');
+
+                progressFill.style.width = '50%';
+
+                if (multiShow) {
+                    await processMultiShowFolder(selectedFolderHandle, defaultSeason, fields, recursive, skipExisting, createTvShowNfo);
+                } else {
+                    // Create tvshow.nfo for single show mode
+                    if (createTvShowNfo) {
+                        await createTvShowNFO(selectedFolderHandle, showTitle, skipExisting);
+                    }
+                    
+                    const episodeCounters = {};
+                    await processDirectory(selectedFolderHandle, defaultSeason, fields, episodeCounters, recursive, '', showTitle, skipExisting, 0);
+                }
+
+                progressFill.style.width = '100%';
+                log('---', 'info');
+                log('NFO generation complete!', 'success');
+
+            } catch (err) {
+                log(`Error: ${err.message}`, 'error');
+            } finally {
+                generateBtn.disabled = false;
+                setTimeout(() => {
+                    progressBar.classList.remove('active');
+                    progressFill.style.width = '0%';
+                }, 1000);
+            }
+        }
+
+        // Check browser compatibility on load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!window.showDirectoryPicker) {
+                log('⚠️ Warning: Your browser does not support the File System Access API', 'warning');
+                log('Please use Chrome 86+ or Edge 86+ for full functionality', 'warning');
+            }
+            
+            // Update NFO preview on page load
+            updateNFOPreview();
+            
+            // Add event listeners to update preview when fields change
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateNFOPreview);
+            });
+            document.getElementById('defaultSeason').addEventListener('input', updateNFOPreview);
+            document.getElementById('showTitle').addEventListener('input', updateNFOPreview);
+            
+            // Note: createTvShowNfo checkbox is already included in the querySelectorAll above
+            
+            // Handle "use folder name" checkbox
+            document.getElementById('useFolderNameCheck').addEventListener('change', function() {
+                if (this.checked && selectedFolderHandle) {
+                    document.getElementById('showTitle').value = selectedFolderHandle.name;
+                    updateNFOPreview();
+                }
+            });
+            
+            // Handle "multi-show" checkbox
+            document.getElementById('multiShowCheck').addEventListener('change', function() {
+                const showTitleGroup = document.getElementById('showTitleGroup');
+                const useFolderNameGroup = document.getElementById('useFolderNameGroup');
+                const showTitleInput = document.getElementById('showTitle');
+                const useFolderNameCheck = document.getElementById('useFolderNameCheck');
+                const multiShowInfo = document.getElementById('multiShowInfo');
+                
+                if (this.checked) {
+                    // Disable show title fields when multi-show is enabled
+                    showTitleInput.disabled = true;
+                    useFolderNameCheck.disabled = true;
+                    showTitleGroup.style.opacity = '0.5';
+                    useFolderNameGroup.style.opacity = '0.5';
+                    multiShowInfo.style.display = 'block';
+                } else {
+                    // Enable show title fields when multi-show is disabled
+                    showTitleInput.disabled = false;
+                    useFolderNameCheck.disabled = false;
+                    showTitleGroup.style.opacity = '1';
+                    useFolderNameGroup.style.opacity = '1';
+                    multiShowInfo.style.display = 'none';
+                }
+                updateNFOPreview();
+            });
+        });
+
+        function generateBashScriptContent() {
+            const defaultSeason = parseInt(document.getElementById('defaultSeason').value) || 1;
+            const recursive = document.getElementById('recursiveCheck').checked;
+            const fields = getSelectedFields();
+            const showTitle = document.getElementById('showTitle').value || 'Series Title';
+            const multiShow = document.getElementById('multiShowCheck').checked;
+            const skipExisting = document.getElementById('existingFilesAction').value === 'skip';
+            const createTvShowNfo = document.getElementById('createTvShowNfo').checked;
+
+            if (fields.length === 0) {
+                alert('Please select at least one field (Title is required)');
+                return null;
+            }
+
+            // Generate NFO template for bash script
+            let nfoTemplate = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\\n<episodedetails>\\n';
+            
+            fields.forEach(field => {
+                if (field === 'title') {
+                    nfoTemplate += '    <title>${basename}</title>\\n';
+                } else if (field === 'season') {
+                    nfoTemplate += '    <season>${current_season}</season>\\n';
+                } else if (field === 'episode') {
+                    nfoTemplate += '    <episode>${display_episode}</episode>\\n';
+                } else if (field === 'displayseason') {
+                    nfoTemplate += '    <displayseason>${current_season}</displayseason>\\n';
+                } else if (field === 'displayepisode') {
+                    nfoTemplate += '    <displayepisode>${display_episode}</displayepisode>\\n';
+                } else if (field === 'showtitle') {
+                    nfoTemplate += multiShow ? '    <showtitle>${show_title}</showtitle>\\n' : `    <showtitle>${showTitle}</showtitle>\\n`;
+                } else if (field === 'plot') {
+                    nfoTemplate += '    <plot>enter plot here</plot>\\n';
+                } else if (field === 'aired') {
+                    nfoTemplate += '    <aired>2024-01-01</aired>\\n';
+                } else if (field === 'rating') {
+                    nfoTemplate += '    <rating>8.0</rating>\\n';
+                } else if (field === 'runtime') {
+                    nfoTemplate += '    <runtime>45</runtime>\\n';
+                } else if (field === 'director') {
+                    nfoTemplate += '    <director>Director Name</director>\\n';
+                } else if (field === 'writer') {
+                    nfoTemplate += '    <writer>Writer Name</writer>\\n';
+                }
+            });
+            
+            nfoTemplate += '</episodedetails>';
+
+            const tvshowTemplate = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<tvshow>
+    <title>\${show_title}</title>
+</tvshow>`;
+
+            const script = `#!/bin/bash
+
+# NFO Generator Script
+# Generated by Jellyfin NFO Generator
+
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
+
+# Configuration
+FOLDER_PATH="."
+SEASON="${defaultSeason}"
+RECURSIVE=${recursive ? 'true' : 'false'}
+MULTI_SHOW=${multiShow ? 'true' : 'false'}
+SKIP_EXISTING=${skipExisting ? 'true' : 'false'}
+CREATE_TVSHOW_NFO=${createTvShowNfo ? 'true' : 'false'}
+${!multiShow ? `SHOW_TITLE="${showTitle}"` : ''}
+
+# Handle relative paths from script directory
+if [[ "$FOLDER_PATH" = /* ]]; then
+    TARGET_PATH="$FOLDER_PATH"
+else
+    TARGET_PATH="$SCRIPT_DIR/$FOLDER_PATH"
+fi
+
+# Check if folder exists
+if [ ! -d "$TARGET_PATH" ]; then
+    echo "Error: Folder '$TARGET_PATH' does not exist"
+    exit 1
+fi
+
+echo "Scanning folder: $TARGET_PATH"
+echo "Default season: $SEASON"
+echo "Recursive: $RECURSIVE"
+echo "Multi-Show Mode: $MULTI_SHOW"
+echo "Create tvshow.nfo: $CREATE_TVSHOW_NFO"
+echo "Skip Existing: $SKIP_EXISTING"
+echo "---"
+
+# Counter for created files
+count=0
+skipped=0
+tvshow_count=0
+
+# Common video extensions
+VIDEO_EXTENSIONS="mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|m2ts|ts"
+
+# Associative array to track episode counters per directory
+declare -A dir_episode_counter
+
+# Function to create tvshow.nfo
+create_tvshow_nfo() {
+    local target_dir="$1"
+    local show_title="$2"
+    local tvshow_file="$target_dir/tvshow.nfo"
+    
+    if [ "$SKIP_EXISTING" = true ] && [ -f "$tvshow_file" ]; then
+        echo "Skipped: tvshow.nfo in $(basename "$target_dir") (already exists)"
+        ((skipped++))
+        return
+    fi
+    
+    cat > "$tvshow_file" << 'TVSHOWEOF'
+${tvshowTemplate}
+TVSHOWEOF
+    
+    echo "Created: tvshow.nfo in $(basename "$target_dir") (Show: $show_title)"
+    ((tvshow_count++))
+}
+
+# Function to process a directory
+process_directory() {
+    local search_path="$1"
+    local show_title="$2"
+    
+    # Find command based on recursive setting
+    if [ "$RECURSIVE" = true ]; then
+        find_cmd="find \\"$search_path\\" -type f -regextype posix-extended -iregex \\".*\\.($VIDEO_EXTENSIONS)$\\""
+    else
+        find_cmd="find \\"$search_path\\" -maxdepth 1 -type f -regextype posix-extended -iregex \\".*\\.($VIDEO_EXTENSIONS)$\\""
+    fi
+    
+    # Find all video files and process them
+    eval "$find_cmd" | sort | while read -r video_file; do
+        # Get the base filename without extension
+        filename=$(basename "$video_file")
+        basename="\${filename%.*}"
+        
+        # Check if NFO already exists
+        nfo_file="\${video_file%.*}.nfo"
+        if [ "$SKIP_EXISTING" = true ] && [ -f "$nfo_file" ]; then
+            echo "Skipped: \${basename}.nfo (already exists)"
+            ((skipped++))
+            continue
+        fi
+        
+        # Get the directory path to check for season info
+        dir_path=$(dirname "$video_file")
+        dir_name=$(basename "$dir_path")
+        
+        # Try to extract season number from directory name
+        season_from_dir=$(echo "$dir_name" | grep -oiP '(?:season|s)\\s*0*(\\d+)' | grep -oP '\\d+' | head -1)
+        
+        # Use directory season if found, otherwise use the provided season parameter
+        if [ -n "$season_from_dir" ]; then
+            current_season=$((10#$season_from_dir))
+        else
+            current_season=$SEASON
+        fi
+        
+        # Extract episode number from filename
+        episode_num=$(echo "$basename" | grep -oiP '(?:e|ep|episode)\\s*0*(\\d+)' | grep -oP '\\d+' | head -1)
+        
+        # If no E-pattern found, try S01E01 pattern
+        if [ -z "$episode_num" ]; then
+            episode_num=$(echo "$basename" | grep -oiP 's\\d+e0*(\\d+)' | grep -oP 'e\\K0*(\\d+)' | head -1)
+        fi
+        
+        # If still no episode number found, try just numbers at the end
+        if [ -z "$episode_num" ]; then
+            episode_num=$(echo "$basename" | grep -oP '\\d+$')
+        fi
+        
+        # If still no episode number found, auto-number
+        if [ -z "$episode_num" ]; then
+            if [ -z "\${dir_episode_counter[$dir_path]}" ]; then
+                dir_episode_counter[$dir_path]=1
+            fi
+            episode_num=\${dir_episode_counter[$dir_path]}
+            ((dir_episode_counter[$dir_path]++))
+            echo "Info: No episode number found in '$filename', auto-numbering as Episode $episode_num"
+        fi
+        
+        # Remove leading zeros for display
+        display_episode=$((10#$episode_num))
+        
+        # Generate NFO content
+        cat > "$nfo_file" << 'EOF'
+${nfoTemplate}
+EOF
+        
+        echo "Created: \${basename}.nfo (Season \${current_season}, Episode \${display_episode})"
+        ((count++))
+    done
+}
+
+# Main execution
+if [ "$MULTI_SHOW" = true ]; then
+    # Process each first-level directory as a separate show
+    for show_dir in "$TARGET_PATH"/*; do
+        if [ -d "$show_dir" ]; then
+            show_title=$(basename "$show_dir")
+            echo "Processing show: $show_title"
+            
+            # Create tvshow.nfo if enabled
+            if [ "$CREATE_TVSHOW_NFO" = true ]; then
+                create_tvshow_nfo "$show_dir" "$show_title"
+            fi
+            
+            process_directory "$show_dir" "$show_title"
+        fi
+    done
+else
+    # Process as single show
+    # Create tvshow.nfo if enabled
+    if [ "$CREATE_TVSHOW_NFO" = true ]; then
+        create_tvshow_nfo "$TARGET_PATH" "$SHOW_TITLE"
+    fi
+    
+    process_directory "$TARGET_PATH" "$SHOW_TITLE"
+fi
+
+echo "---"
+echo "Total NFO files created: $count"
+if [ $tvshow_count -gt 0 ]; then
+    echo "Total tvshow.nfo files created: $tvshow_count"
+fi
+if [ $skipped -gt 0 ]; then
+    echo "Total files skipped: $skipped"
+fi
+`;
+
+            return script;
+        }
+
+        function generateBashScript() {
+            const script = generateBashScriptContent();
+            if (script) {
+                document.getElementById('bashScriptOutput').textContent = script;
+            }
+        }
+
+        function downloadBashScript() {
+            const script = generateBashScriptContent();
+            if (!script) return;
+
+            const blob = new Blob([script], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'generate_nfo.sh';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            log('Bash script downloaded successfully', 'success');
+        }
+
+        function copyBashScript() {
+            const output = document.getElementById('bashScriptOutput').textContent;
+            
+            if (!output || output.trim() === '') {
+                alert('Please generate the bash script first');
+                return;
+            }
+
+            navigator.clipboard.writeText(output).then(() => {
+                const originalText = event.target.textContent;
+                event.target.textContent = '✓ Copied!';
+                event.target.style.background = 'linear-gradient(135deg, #00ff88, #00d4ff)';
+                
+                setTimeout(() => {
+                    event.target.textContent = originalText;
+                    event.target.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy to clipboard');
+                console.error('Copy error:', err);
+            });
+        }
+    </script>
+</body>
+</html>
