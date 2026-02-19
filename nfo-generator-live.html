@@ -632,8 +632,15 @@
             <div class="progress-bar" id="progressBar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="dryRunCheck">
+                    <span>Preview mode — no files will be written</span>
+                </label>
+            </div>
             <div class="action-buttons">
                 <button class="btn" onclick="generateNFOFiles()" id="generateBtn">🚀 Generate NFO Files</button>
+                <button class="btn btn-secondary" onclick="auditNFOFiles()" id="auditBtn">🔍 Audit NFOs</button>
                 <button class="btn btn-secondary" onclick="clearOutput()">🗑️ Clear Output</button>
             </div>
             <div class="form-group" style="margin-top: 1.5rem;">
@@ -661,6 +668,7 @@
 
     <script>
         let selectedFolderHandle = null;
+        let dryRunMode = false;
         const VIDEO_EXTENSIONS = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg', 'm2ts', 'ts'];
 
         async function selectFolder() {
@@ -807,10 +815,16 @@
         }
 
         function generateTvShowNFO(showTitle) {
-            return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<tvshow>
-    <title>${showTitle}</title>
-</tvshow>`;
+            const fields = getSelectedFields();
+            let content = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<tvshow>\n    <title>${showTitle}</title>\n`;
+            OPTIONAL_FIELDS.forEach(field => {
+                if (fields.includes(field)) {
+                    const value = getOptionalFieldValue(field);
+                    if (value) content += `    <${field}>${value}</${field}>\n`;
+                }
+            });
+            content += `</tvshow>`;
+            return content;
         }
 
         async function createTvShowNFO(dirHandle, showTitle, skipExisting) {
@@ -828,12 +842,15 @@
             }
             
             try {
-                const nfoHandle = await dirHandle.getFileHandle(tvshowFilename, { create: true });
-                const writable = await nfoHandle.createWritable();
-                await writable.write(generateTvShowNFO(showTitle));
-                await writable.close();
-                
-                log(`Created: tvshow.nfo in ${dirHandle.name} (Show: ${showTitle})`, 'success');
+                if (dryRunMode) {
+                    log(`[PREVIEW] Would create: tvshow.nfo in ${dirHandle.name} (Show: ${showTitle})`, 'info');
+                } else {
+                    const nfoHandle = await dirHandle.getFileHandle(tvshowFilename, { create: true });
+                    const writable = await nfoHandle.createWritable();
+                    await writable.write(generateTvShowNFO(showTitle));
+                    await writable.close();
+                    log(`Created: tvshow.nfo in ${dirHandle.name} (Show: ${showTitle})`, 'success');
+                }
             } catch (err) {
                 log(`Error creating tvshow.nfo in ${dirHandle.name}: ${err.message}`, 'error');
             }
@@ -896,12 +913,15 @@
                 
                 // Write NFO file
                 try {
-                    const nfoHandle = await dirHandle.getFileHandle(nfoFilename, { create: true });
-                    const writable = await nfoHandle.createWritable();
-                    await writable.write(nfoContent);
-                    await writable.close();
-                    
-                    log(`Created: ${path}${nfoFilename} (Season ${currentSeason}, Episode ${episodeNum})`, 'success');
+                    if (dryRunMode) {
+                        log(`[PREVIEW] Would create: ${path}${nfoFilename} (Season ${currentSeason}, Episode ${episodeNum})`, 'info');
+                    } else {
+                        const nfoHandle = await dirHandle.getFileHandle(nfoFilename, { create: true });
+                        const writable = await nfoHandle.createWritable();
+                        await writable.write(nfoContent);
+                        await writable.close();
+                        log(`Created: ${path}${nfoFilename} (Season ${currentSeason}, Episode ${episodeNum})`, 'success');
+                    }
                 } catch (err) {
                     log(`Error creating NFO for ${filename}: ${err.message}`, 'error');
                 }
@@ -985,10 +1005,14 @@
                 return;
             }
 
-            const writable = await fileHandle.createWritable();
-            await writable.write(content);
-            await writable.close();
-            log(`Amended: ${path}${nfoFilename} (${actions.join(', ')})`, 'success');
+            if (dryRunMode) {
+                log(`[PREVIEW] Would amend: ${path}${nfoFilename} (${actions.join(', ')})`, 'info');
+            } else {
+                const writable = await fileHandle.createWritable();
+                await writable.write(content);
+                await writable.close();
+                log(`Amended: ${path}${nfoFilename} (${actions.join(', ')})`, 'success');
+            }
         }
 
         async function processDirectoryAmend(dirHandle, fieldsToAmend, recursive, path = '') {
@@ -1013,6 +1037,111 @@
             }
         }
 
+        async function auditDirectory(dirHandle, fieldsToCheck, recursive, path = '', stats = { total: 0, withNFO: 0, missingNFO: 0 }) {
+            const entries = [];
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const ext = entry.name.split('.').pop().toLowerCase();
+                    if (VIDEO_EXTENSIONS.includes(ext)) entries.push(entry);
+                } else if (entry.kind === 'directory' && recursive) {
+                    await auditDirectory(entry, fieldsToCheck, recursive, path + entry.name + '/', stats);
+                }
+            }
+            entries.sort((a, b) => a.name.localeCompare(b.name));
+
+            for (const entry of entries) {
+                stats.total++;
+                const basename = entry.name.substring(0, entry.name.lastIndexOf('.'));
+                const nfoFilename = basename + '.nfo';
+                let nfoHandle;
+                try {
+                    nfoHandle = await dirHandle.getFileHandle(nfoFilename);
+                } catch (_) {
+                    stats.missingNFO++;
+                    log(`MISSING NFO: ${path}${entry.name}`, 'warning');
+                    continue;
+                }
+
+                stats.withNFO++;
+                if (fieldsToCheck.length === 0) {
+                    log(`OK: ${path}${nfoFilename}`, 'success');
+                    continue;
+                }
+
+                const file = await nfoHandle.getFile();
+                const content = await file.text();
+                const missingFields = fieldsToCheck.filter(field => {
+                    const tagRegex = new RegExp(`<${field}>[^<]*<\\/${field}>`, 'i');
+                    return !tagRegex.test(content);
+                });
+
+                if (missingFields.length === 0) {
+                    log(`OK: ${path}${nfoFilename}`, 'success');
+                } else {
+                    log(`INCOMPLETE: ${path}${nfoFilename} — missing: ${missingFields.map(f => `<${f}>`).join(', ')}`, 'warning');
+                }
+            }
+            return stats;
+        }
+
+        async function auditNFOFiles() {
+            if (!selectedFolderHandle) {
+                alert('Please select a folder first!');
+                return;
+            }
+
+            const auditBtn = document.getElementById('auditBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+
+            auditBtn.disabled = true;
+            progressBar.classList.add('active');
+            clearOutput();
+
+            try {
+                const recursive = document.getElementById('recursiveCheck').checked;
+                const multiShow = document.getElementById('multiShowCheck').checked;
+                const fieldsToCheck = getSelectedFields().filter(f => OPTIONAL_FIELDS.includes(f));
+
+                log('Starting NFO audit...', 'info');
+                log(`Folder: ${selectedFolderHandle.name}`, 'info');
+                if (fieldsToCheck.length > 0) {
+                    log(`Checking for optional fields: ${fieldsToCheck.join(', ')}`, 'info');
+                } else {
+                    log('Checking for NFO presence only (no optional fields selected)', 'info');
+                }
+                log('---', 'info');
+
+                progressFill.style.width = '50%';
+
+                const stats = { total: 0, withNFO: 0, missingNFO: 0 };
+
+                if (multiShow) {
+                    for await (const entry of selectedFolderHandle.values()) {
+                        if (entry.kind === 'directory') {
+                            log(`Show: ${entry.name}`, 'info');
+                            await auditDirectory(entry, fieldsToCheck, recursive, entry.name + '/', stats);
+                        }
+                    }
+                } else {
+                    await auditDirectory(selectedFolderHandle, fieldsToCheck, recursive, '', stats);
+                }
+
+                progressFill.style.width = '100%';
+                log('---', 'info');
+                log(`Audit complete — ${stats.total} video file(s) found: ${stats.withNFO} with NFO, ${stats.missingNFO} missing NFO`, stats.missingNFO > 0 ? 'warning' : 'success');
+
+            } catch (err) {
+                log(`Error: ${err.message}`, 'error');
+            } finally {
+                auditBtn.disabled = false;
+                setTimeout(() => {
+                    progressBar.classList.remove('active');
+                    progressFill.style.width = '0%';
+                }, 1000);
+            }
+        }
+
         async function generateNFOFiles() {
             if (!selectedFolderHandle) {
                 alert('Please select a folder first!');
@@ -1022,10 +1151,12 @@
             const generateBtn = document.getElementById('generateBtn');
             const progressBar = document.getElementById('progressBar');
             const progressFill = document.getElementById('progressFill');
-            
+
+            dryRunMode = document.getElementById('dryRunCheck').checked;
             generateBtn.disabled = true;
             progressBar.classList.add('active');
             clearOutput();
+            if (dryRunMode) log('PREVIEW MODE — no files will be written', 'warning');
 
             try {
                 const defaultSeason = parseInt(document.getElementById('defaultSeason').value) || 1;
