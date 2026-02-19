@@ -521,6 +521,36 @@
                     <input type="checkbox" id="field_writer" />
                     <label for="field_writer">Writer</label>
                 </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="field_mpaa" />
+                    <label for="field_mpaa">TV Rating</label>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                <div class="form-group" id="airedValueGroup" style="display: none; margin-bottom: 0;">
+                    <label for="defaultAired">Default Aired Date (applied to all files)</label>
+                    <input type="text" id="defaultAired" placeholder="e.g. 2024-01-01" />
+                </div>
+                <div class="form-group" id="ratingValueGroup" style="display: none; margin-bottom: 0;">
+                    <label for="defaultRating">Default Rating (applied to all files)</label>
+                    <input type="text" id="defaultRating" placeholder="e.g. 8.0" />
+                </div>
+                <div class="form-group" id="runtimeValueGroup" style="display: none; margin-bottom: 0;">
+                    <label for="defaultRuntime">Default Runtime in minutes (applied to all files)</label>
+                    <input type="text" id="defaultRuntime" placeholder="e.g. 45" />
+                </div>
+                <div class="form-group" id="directorValueGroup" style="display: none; margin-bottom: 0;">
+                    <label for="defaultDirector">Default Director (applied to all files)</label>
+                    <input type="text" id="defaultDirector" placeholder="e.g. Director Name" />
+                </div>
+                <div class="form-group" id="writerValueGroup" style="display: none; margin-bottom: 0;">
+                    <label for="defaultWriter">Default Writer (applied to all files)</label>
+                    <input type="text" id="defaultWriter" placeholder="e.g. Writer Name" />
+                </div>
+                <div class="form-group" id="mpaaValueGroup" style="display: none; margin-bottom: 0;">
+                    <label for="defaultMpaa">Default TV Rating (applied to all files)</label>
+                    <input type="text" id="defaultMpaa" placeholder="e.g. TV-G, TV-PG, TV-14, TV-MA..." />
+                </div>
             </div>
         </div>
 
@@ -623,8 +653,8 @@
         }
 
         function getSelectedFields() {
-            const fields = ['title', 'season', 'episode', 'displayseason', 'displayepisode', 
-                          'showtitle', 'plot', 'aired', 'rating', 'runtime', 'director', 'writer'];
+            const fields = ['title', 'season', 'episode', 'displayseason', 'displayepisode',
+                          'showtitle', 'plot', 'aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
             return fields.filter(field => {
                 const checkbox = document.getElementById(`field_${field}`);
                 return checkbox && checkbox.checked;
@@ -671,18 +701,26 @@
                 } else if (field === 'plot') {
                     content += `    <plot>enter plot here</plot>\n`;
                 } else if (field === 'aired') {
-                    content += `    <aired>2024-01-01</aired>\n`;
+                    const airedValue = document.getElementById('defaultAired').value || '2024-01-01';
+                    content += `    <aired>${airedValue}</aired>\n`;
                 } else if (field === 'rating') {
-                    content += `    <rating>8.0</rating>\n`;
+                    const ratingValue = document.getElementById('defaultRating').value || '8.0';
+                    content += `    <rating>${ratingValue}</rating>\n`;
                 } else if (field === 'runtime') {
-                    content += `    <runtime>45</runtime>\n`;
+                    const runtimeValue = document.getElementById('defaultRuntime').value || '45';
+                    content += `    <runtime>${runtimeValue}</runtime>\n`;
                 } else if (field === 'director') {
-                    content += `    <director>Director Name</director>\n`;
+                    const directorValue = document.getElementById('defaultDirector').value || 'Director Name';
+                    content += `    <director>${directorValue}</director>\n`;
                 } else if (field === 'writer') {
-                    content += `    <writer>Writer Name</writer>\n`;
+                    const writerValue = document.getElementById('defaultWriter').value || 'Writer Name';
+                    content += `    <writer>${writerValue}</writer>\n`;
+                } else if (field === 'mpaa') {
+                    const mpaaValue = document.getElementById('defaultMpaa').value || 'TV-PG';
+                    content += `    <mpaa>${mpaaValue}</mpaa>\n`;
                 }
             });
-            
+
             content += '</episodedetails>';
             return content;
         }
@@ -917,6 +955,14 @@
             });
             document.getElementById('defaultSeason').addEventListener('input', updateNFOPreview);
             document.getElementById('showTitle').addEventListener('input', updateNFOPreview);
+            // Show/hide value inputs for non-default fields when their checkbox is toggled
+            const nonDefaultFields = ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
+            nonDefaultFields.forEach(field => {
+                document.getElementById(`field_${field}`).addEventListener('change', function() {
+                    document.getElementById(`${field}ValueGroup`).style.display = this.checked ? 'block' : 'none';
+                });
+                document.getElementById(`default${field.charAt(0).toUpperCase() + field.slice(1)}`).addEventListener('input', updateNFOPreview);
+            });
             
             // Note: createTvShowNfo checkbox is already included in the querySelectorAll above
             
@@ -988,15 +1034,23 @@
                 } else if (field === 'plot') {
                     nfoTemplate += '    <plot>enter plot here</plot>\\n';
                 } else if (field === 'aired') {
-                    nfoTemplate += '    <aired>2024-01-01</aired>\\n';
+                    const airedValue = document.getElementById('defaultAired').value || '2024-01-01';
+                    nfoTemplate += `    <aired>${airedValue}</aired>\\n`;
                 } else if (field === 'rating') {
-                    nfoTemplate += '    <rating>8.0</rating>\\n';
+                    const ratingValue = document.getElementById('defaultRating').value || '8.0';
+                    nfoTemplate += `    <rating>${ratingValue}</rating>\\n`;
                 } else if (field === 'runtime') {
-                    nfoTemplate += '    <runtime>45</runtime>\\n';
+                    const runtimeValue = document.getElementById('defaultRuntime').value || '45';
+                    nfoTemplate += `    <runtime>${runtimeValue}</runtime>\\n`;
                 } else if (field === 'director') {
-                    nfoTemplate += '    <director>Director Name</director>\\n';
+                    const directorValue = document.getElementById('defaultDirector').value || 'Director Name';
+                    nfoTemplate += `    <director>${directorValue}</director>\\n`;
                 } else if (field === 'writer') {
-                    nfoTemplate += '    <writer>Writer Name</writer>\\n';
+                    const writerValue = document.getElementById('defaultWriter').value || 'Writer Name';
+                    nfoTemplate += `    <writer>${writerValue}</writer>\\n`;
+                } else if (field === 'mpaa') {
+                    const mpaaValue = document.getElementById('defaultMpaa').value || 'TV-PG';
+                    nfoTemplate += `    <mpaa>${mpaaValue}</mpaa>\\n`;
                 }
             });
             
