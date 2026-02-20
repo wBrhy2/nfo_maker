@@ -526,6 +526,11 @@
                     <label for="field_mpaa" style="margin: 0; width: 110px; white-space: nowrap;">TV Rating</label>
                     <input type="text" id="defaultMpaa" placeholder="e.g. TV-G, TV-PG, TV-14, TV-MA" style="flex: 1;" />
                 </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" id="field_genre" onchange="updateNFOPreview()" />
+                    <label for="field_genre" style="margin: 0; width: 110px; white-space: nowrap;">Genre</label>
+                    <input type="text" id="defaultGenre" placeholder="e.g. Drama, Thriller" style="flex: 1;" />
+                </div>
             </div>
         </div>
 
@@ -701,6 +706,11 @@
                 } else if (field === 'mpaa') {
                     const mpaaValue = document.getElementById('defaultMpaa').value || 'TV-PG';
                     content += `    <mpaa>${mpaaValue}</mpaa>\n`;
+                } else if (field === 'genre') {
+                    const genreValue = document.getElementById('defaultGenre').value || 'Drama';
+                    genreValue.split(',').map(g => g.trim()).filter(Boolean).forEach(g => {
+                        content += `    <genre>${g}</genre>\n`;
+                    });
                 }
             });
 
@@ -737,7 +747,14 @@
             OPTIONAL_FIELDS.forEach(field => {
                 if (fields.includes(field)) {
                     const value = getOptionalFieldValue(field);
-                    if (value) content += `    <${field}>${value}</${field}>\n`;
+                    if (!value) return;
+                    if (field === 'genre') {
+                        value.split(',').map(g => g.trim()).filter(Boolean).forEach(g => {
+                            content += `    <genre>${g}</genre>\n`;
+                        });
+                    } else {
+                        content += `    <${field}>${value}</${field}>\n`;
+                    }
                 }
             });
             content += `</tvshow>`;
@@ -864,7 +881,7 @@
             }
         }
 
-        const OPTIONAL_FIELDS = ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
+        const OPTIONAL_FIELDS = ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa', 'genre'];
 
         const FIELD_PLACEHOLDERS = {
             aired:    '2024-01-01',
@@ -873,6 +890,7 @@
             director: 'Director Name',
             writer:   'Writer Name',
             mpaa:     'TV-PG',
+            genre:    'Drama',
         };
 
         function getOptionalFieldValue(field) {
@@ -883,6 +901,7 @@
                 director: () => document.getElementById('defaultDirector').value || 'Director Name',
                 writer:   () => document.getElementById('defaultWriter').value   || 'Writer Name',
                 mpaa:     () => document.getElementById('defaultMpaa').value     || 'TV-PG',
+                genre:    () => document.getElementById('defaultGenre').value    || 'Drama',
             };
             return map[field] ? map[field]() : null;
         }
@@ -909,6 +928,16 @@
             for (const field of fieldsToAmend) {
                 const value = getOptionalFieldValue(field);
                 if (value === null) continue;
+
+                // Genre is multi-value: remove all existing tags, inject new set
+                if (field === 'genre') {
+                    const genreValues = value.split(',').map(g => g.trim()).filter(Boolean);
+                    content = content.replace(/[ \t]*<genre>[^<]*<\/genre>\n?/gi, '');
+                    const newTags = genreValues.map(g => `    <genre>${g}</genre>`).join('\n');
+                    content = content.replace('</episodedetails>', `${newTags}\n</episodedetails>`);
+                    actions.push(`set genres: ${genreValues.join(', ')}`);
+                    continue;
+                }
 
                 const tagRegex = new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i');
                 const newTag = `<${field}>${value}</${field}>`;
@@ -1187,7 +1216,7 @@
             document.getElementById('defaultSeason').addEventListener('input', updateNFOPreview);
             document.getElementById('showTitle').addEventListener('input', updateNFOPreview);
             // Wire up preview updates for optional field value inputs
-            ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'].forEach(field => {
+            ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa', 'genre'].forEach(field => {
                 document.getElementById(`default${field.charAt(0).toUpperCase() + field.slice(1)}`).addEventListener('input', updateNFOPreview);
             });
             
@@ -1256,7 +1285,16 @@
                 let amendLogic = '';
                 fieldsToAmend.forEach(field => {
                     const value = getOptionalFieldValue(field);
-                    amendLogic += `
+                    if (field === 'genre') {
+                        const genreValues = value.split(',').map(g => g.trim()).filter(Boolean);
+                        const injectTags = genreValues.map(g => `    <genre>${g}<\\/genre>`).join('\\n');
+                        amendLogic += `
+    # Amend <genre> (remove all existing, inject new set)
+    sed -i '/<genre>/Id' "$nfo_file"
+    sed -i 's|<\\/episodedetails>|${injectTags}\\n<\\/episodedetails>|' "$nfo_file"
+    actions="$actions set-genres:(${genreValues.join(',')})"`;
+                    } else {
+                        amendLogic += `
     # Amend <${field}> (replace if exists, add if absent)
     if grep -qi '<${field}>' "$nfo_file"; then
         sed -i 's|<${field}>[^<]*<\\/${field}>|<${field}>${value}<\\/${field}>|i' "$nfo_file"
@@ -1265,6 +1303,7 @@
         sed -i 's|<\\/episodedetails>|    <${field}>${value}<\\/${field}>\\n<\\/episodedetails>|' "$nfo_file"
         actions="$actions added:<${field}>"
     fi`;
+                    }
                 });
 
                 return `#!/bin/bash
