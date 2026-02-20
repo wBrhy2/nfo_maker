@@ -641,7 +641,7 @@
 
         function getSelectedFields() {
             const fields = ['season', 'episode', 'displayseason', 'displayepisode',
-                          'showtitle', 'plot', 'aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
+                          'showtitle', 'plot', 'aired', 'rating', 'runtime', 'director', 'writer', 'mpaa', 'genre'];
             const selected = fields.filter(field => {
                 const checkbox = document.getElementById(`field_${field}`);
                 return checkbox && checkbox.checked;
@@ -670,48 +670,41 @@
             return match ? parseInt(match[1]) : null;
         }
 
+        function buildFieldLines(field, { filename = '', season = 1, episode = 1, showTitle = '', forBash = false, multiShow = false } = {}) {
+            switch (field) {
+                case 'title':
+                    return [`    <title>${forBash ? '${basename}' : filename}</title>`];
+                case 'season':
+                    return [`    <season>${forBash ? '${current_season}' : season}</season>`];
+                case 'episode':
+                    return [`    <episode>${forBash ? '${display_episode}' : episode}</episode>`];
+                case 'displayseason':
+                    return [`    <displayseason>${forBash ? '${current_season}' : season}</displayseason>`];
+                case 'displayepisode':
+                    return [`    <displayepisode>${forBash ? '${display_episode}' : episode}</displayepisode>`];
+                case 'showtitle': {
+                    const st = (forBash && multiShow) ? '${show_title}' : showTitle;
+                    return [`    <showtitle>${st}</showtitle>`];
+                }
+                case 'plot':
+                    return [`    <plot>enter plot here</plot>`];
+                default: {
+                    const value = getOptionalFieldValue(field);
+                    if (!value) return [];
+                    if (field === 'genre') {
+                        return value.split(',').map(g => g.trim()).filter(Boolean).map(g => `    <genre>${g}</genre>`);
+                    }
+                    return [`    <${field}>${value}</${field}>`];
+                }
+            }
+        }
+
         function generateNFOContent(filename, season, episode, fields, showTitle = 'Series Title') {
             let content = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<episodedetails>\n';
             
             fields.forEach(field => {
-                if (field === 'title') {
-                    content += `    <title>${filename}</title>\n`;
-                } else if (field === 'season') {
-                    content += `    <season>${season}</season>\n`;
-                } else if (field === 'episode') {
-                    content += `    <episode>${episode}</episode>\n`;
-                } else if (field === 'displayseason') {
-                    content += `    <displayseason>${season}</displayseason>\n`;
-                } else if (field === 'displayepisode') {
-                    content += `    <displayepisode>${episode}</displayepisode>\n`;
-                } else if (field === 'showtitle') {
-                    content += `    <showtitle>${showTitle}</showtitle>\n`;
-                } else if (field === 'plot') {
-                    content += `    <plot>enter plot here</plot>\n`;
-                } else if (field === 'aired') {
-                    const airedValue = document.getElementById('defaultAired').value || '2024-01-01';
-                    content += `    <aired>${airedValue}</aired>\n`;
-                } else if (field === 'rating') {
-                    const ratingValue = document.getElementById('defaultRating').value || '8.0';
-                    content += `    <rating>${ratingValue}</rating>\n`;
-                } else if (field === 'runtime') {
-                    const runtimeValue = document.getElementById('defaultRuntime').value || '45';
-                    content += `    <runtime>${runtimeValue}</runtime>\n`;
-                } else if (field === 'director') {
-                    const directorValue = document.getElementById('defaultDirector').value || 'Director Name';
-                    content += `    <director>${directorValue}</director>\n`;
-                } else if (field === 'writer') {
-                    const writerValue = document.getElementById('defaultWriter').value || 'Writer Name';
-                    content += `    <writer>${writerValue}</writer>\n`;
-                } else if (field === 'mpaa') {
-                    const mpaaValue = document.getElementById('defaultMpaa').value || 'TV-PG';
-                    content += `    <mpaa>${mpaaValue}</mpaa>\n`;
-                } else if (field === 'genre') {
-                    const genreValue = document.getElementById('defaultGenre').value || 'Drama';
-                    genreValue.split(',').map(g => g.trim()).filter(Boolean).forEach(g => {
-                        content += `    <genre>${g}</genre>\n`;
-                    });
-                }
+                const lines = buildFieldLines(field, { filename, season, episode, showTitle });
+                if (lines.length) content += lines.join('\n') + '\n';
             });
 
             content += '</episodedetails>';
@@ -1378,39 +1371,8 @@ echo "Total amended: $count"
             let nfoTemplate = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\\n<episodedetails>\\n';
             
             fields.forEach(field => {
-                if (field === 'title') {
-                    nfoTemplate += '    <title>${basename}</title>\\n';
-                } else if (field === 'season') {
-                    nfoTemplate += '    <season>${current_season}</season>\\n';
-                } else if (field === 'episode') {
-                    nfoTemplate += '    <episode>${display_episode}</episode>\\n';
-                } else if (field === 'displayseason') {
-                    nfoTemplate += '    <displayseason>${current_season}</displayseason>\\n';
-                } else if (field === 'displayepisode') {
-                    nfoTemplate += '    <displayepisode>${display_episode}</displayepisode>\\n';
-                } else if (field === 'showtitle') {
-                    nfoTemplate += multiShow ? '    <showtitle>${show_title}</showtitle>\\n' : `    <showtitle>${showTitle}</showtitle>\\n`;
-                } else if (field === 'plot') {
-                    nfoTemplate += '    <plot>enter plot here</plot>\\n';
-                } else if (field === 'aired') {
-                    const airedValue = document.getElementById('defaultAired').value || '2024-01-01';
-                    nfoTemplate += `    <aired>${airedValue}</aired>\\n`;
-                } else if (field === 'rating') {
-                    const ratingValue = document.getElementById('defaultRating').value || '8.0';
-                    nfoTemplate += `    <rating>${ratingValue}</rating>\\n`;
-                } else if (field === 'runtime') {
-                    const runtimeValue = document.getElementById('defaultRuntime').value || '45';
-                    nfoTemplate += `    <runtime>${runtimeValue}</runtime>\\n`;
-                } else if (field === 'director') {
-                    const directorValue = document.getElementById('defaultDirector').value || 'Director Name';
-                    nfoTemplate += `    <director>${directorValue}</director>\\n`;
-                } else if (field === 'writer') {
-                    const writerValue = document.getElementById('defaultWriter').value || 'Writer Name';
-                    nfoTemplate += `    <writer>${writerValue}</writer>\\n`;
-                } else if (field === 'mpaa') {
-                    const mpaaValue = document.getElementById('defaultMpaa').value || 'TV-PG';
-                    nfoTemplate += `    <mpaa>${mpaaValue}</mpaa>\\n`;
-                }
+                const lines = buildFieldLines(field, { showTitle, forBash: true, multiShow });
+                if (lines.length) nfoTemplate += lines.join('\\n') + '\\n';
             });
             
             nfoTemplate += '</episodedetails>';
