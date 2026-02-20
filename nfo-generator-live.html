@@ -238,11 +238,12 @@
             background: rgba(0, 255, 136, 0.05);
         }
 
-        .checkbox-item input[type="checkbox"] {
+        input[type="checkbox"] {
             width: 20px;
             height: 20px;
             accent-color: var(--accent-primary);
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .checkbox-item label {
@@ -335,10 +336,8 @@
         }
 
         .recursive-toggle input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
-            accent-color: var(--accent-primary);
-            cursor: pointer;
+            width: 20px;
+            height: 20px;
         }
 
         .recursive-toggle label {
@@ -389,23 +388,6 @@
             background: var(--accent-secondary);
         }
 
-        .amend-action-select {
-            padding: 0.875rem 0.75rem;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            font-family: 'Space Mono', monospace;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: border-color 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .amend-action-select:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-        }
 
         @media (max-width: 768px) {
             h1 {
@@ -454,14 +436,10 @@
             </div>
             <div class="form-group">
                 <label for="existingFilesAction">Existing NFO Files</label>
-                <select id="existingFilesAction" style="width: 100%; padding: 0.875rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.95rem;" onchange="updateAmendInfo()">
+                <select id="existingFilesAction" style="width: 100%; padding: 0.875rem 1rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.95rem;">
                     <option value="skip">Skip (keep existing)</option>
                     <option value="replace">Replace (overwrite existing)</option>
-                    <option value="amend">Amend (upsert selected optional tags)</option>
                 </select>
-            </div>
-            <div class="info-box" id="amendInfo" style="display: none;">
-                ✏️ Amend Mode: For each video file with an existing NFO, the selected optional tags will be inserted if absent or replaced if already present. Files with no existing NFO are skipped. Required/default tags are never touched.
             </div>
             <div class="recursive-toggle">
                 <input type="checkbox" id="multiShowCheck" />
@@ -470,35 +448,27 @@
             <div class="info-box" id="multiShowInfo" style="display: none; margin-top: 1rem;">
                 📁 Multi-Show Mode: Each first-level folder will be treated as a separate show. The folder name will be used as the show title for all episodes within that folder and its subfolders.
             </div>
-            <div class="form-group">
-                <label for="defaultSeason">Default Season Number</label>
-                <input type="number" id="defaultSeason" value="1" min="1" />
-            </div>
-            <div class="form-group" id="showTitleGroup">
-                <label for="showTitle">Show Title</label>
-                <input type="text" id="showTitle" placeholder="Enter show title..." />
-            </div>
-            <div class="recursive-toggle" id="useFolderNameGroup">
-                <input type="checkbox" id="useFolderNameCheck" />
-                <label for="useFolderNameCheck">Use selected folder name as show title</label>
-            </div>
         </div>
 
         <div class="card">
             <h2 class="section-title">NFO Fields</h2>
-            <div class="info-box">
-                ✓ Select which fields to include in the generated NFO files<br>
-                📁 tvshow.nfo: Creates a series-level metadata file in each show's root directory (recommended for Jellyfin)
+            <div class="form-group" id="showTitleGroup">
+                <label for="showTitle">Show Title</label>
+                <input type="text" id="showTitle" placeholder="Enter show title..." />
+            </div>
+            <div class="recursive-toggle" id="useFolderNameGroup" style="margin-bottom: 1.5rem;">
+                <input type="checkbox" id="useFolderNameCheck" />
+                <label for="useFolderNameCheck">Use selected folder name as show title</label>
+            </div>
+            <div class="form-group">
+                <label for="defaultSeason">Default Season Number</label>
+                <input type="number" id="defaultSeason" value="1" min="1" />
             </div>
             <div class="recursive-toggle" style="margin-bottom: 1rem;">
                 <input type="checkbox" id="createTvShowNfo" />
                 <label for="createTvShowNfo">Create tvshow.nfo file for each series</label>
             </div>
             <div class="checkbox-grid">
-                <div class="checkbox-item">
-                    <input type="checkbox" id="field_title" checked disabled />
-                    <label for="field_title">Title (Required)</label>
-                </div>
                 <div class="checkbox-item">
                     <input type="checkbox" id="field_season" checked />
                     <label for="field_season">Season</label>
@@ -527,57 +497,33 @@
             <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <input type="checkbox" id="field_aired" onchange="updateNFOPreview()" />
-                    <label for="field_aired" style="margin: 0; min-width: 110px; white-space: nowrap;">Aired Date</label>
+                    <label for="field_aired" style="margin: 0; width: 110px; white-space: nowrap;">Aired Date</label>
                     <input type="text" id="defaultAired" placeholder="e.g. 2024-01-01" style="flex: 1;" />
-                    <select id="airedAmendAction" class="amend-action-select">
-                        <option value="replace">Replace if exists</option>
-                        <option value="skip">Skip if exists</option>
-                    </select>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <input type="checkbox" id="field_rating" onchange="updateNFOPreview()" />
-                    <label for="field_rating" style="margin: 0; min-width: 110px; white-space: nowrap;">Rating</label>
+                    <label for="field_rating" style="margin: 0; width: 110px; white-space: nowrap;">Rating</label>
                     <input type="text" id="defaultRating" placeholder="e.g. 8.0" style="flex: 1;" />
-                    <select id="ratingAmendAction" class="amend-action-select">
-                        <option value="replace">Replace if exists</option>
-                        <option value="skip">Skip if exists</option>
-                    </select>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <input type="checkbox" id="field_runtime" onchange="updateNFOPreview()" />
-                    <label for="field_runtime" style="margin: 0; min-width: 110px; white-space: nowrap;">Runtime (min)</label>
-                    <input type="text" id="defaultRuntime" placeholder="e.g. 45" style="flex: 1;" />
-                    <select id="runtimeAmendAction" class="amend-action-select">
-                        <option value="replace">Replace if exists</option>
-                        <option value="skip">Skip if exists</option>
-                    </select>
+                    <label for="field_runtime" style="margin: 0; width: 110px; white-space: nowrap;">Runtime</label>
+                    <input type="text" id="defaultRuntime" placeholder="e.g. 45 (minutes)" style="flex: 1;" />
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <input type="checkbox" id="field_director" onchange="updateNFOPreview()" />
-                    <label for="field_director" style="margin: 0; min-width: 110px; white-space: nowrap;">Director</label>
+                    <label for="field_director" style="margin: 0; width: 110px; white-space: nowrap;">Director</label>
                     <input type="text" id="defaultDirector" placeholder="e.g. Director Name" style="flex: 1;" />
-                    <select id="directorAmendAction" class="amend-action-select">
-                        <option value="replace">Replace if exists</option>
-                        <option value="skip">Skip if exists</option>
-                    </select>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <input type="checkbox" id="field_writer" onchange="updateNFOPreview()" />
-                    <label for="field_writer" style="margin: 0; min-width: 110px; white-space: nowrap;">Writer</label>
+                    <label for="field_writer" style="margin: 0; width: 110px; white-space: nowrap;">Writer</label>
                     <input type="text" id="defaultWriter" placeholder="e.g. Writer Name" style="flex: 1;" />
-                    <select id="writerAmendAction" class="amend-action-select">
-                        <option value="replace">Replace if exists</option>
-                        <option value="skip">Skip if exists</option>
-                    </select>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <input type="checkbox" id="field_mpaa" onchange="updateNFOPreview()" />
-                    <label for="field_mpaa" style="margin: 0; min-width: 110px; white-space: nowrap;">TV Rating</label>
+                    <label for="field_mpaa" style="margin: 0; width: 110px; white-space: nowrap;">TV Rating</label>
                     <input type="text" id="defaultMpaa" placeholder="e.g. TV-G, TV-PG, TV-14, TV-MA" style="flex: 1;" />
-                    <select id="mpaaAmendAction" class="amend-action-select">
-                        <option value="replace">Replace if exists</option>
-                        <option value="skip">Skip if exists</option>
-                    </select>
                 </div>
             </div>
         </div>
@@ -602,14 +548,13 @@
             <div class="progress-bar" id="progressBar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
-            <div class="form-group" style="margin-bottom: 1rem;">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="dryRunCheck">
-                    <span>Preview mode — no files will be written</span>
-                </label>
+            <div class="checkbox-item" style="margin-bottom: 1rem; display: inline-flex;">
+                <input type="checkbox" id="dryRunCheck">
+                <label for="dryRunCheck">Preview mode — no files will be written</label>
             </div>
             <div class="action-buttons">
                 <button class="btn" onclick="generateNFOFiles()" id="generateBtn">🚀 Generate NFO Files</button>
+                <button class="btn btn-secondary" onclick="generateNFOFiles('amend')" id="amendBtn">✏️ Amend NFO Files</button>
                 <button class="btn btn-secondary" onclick="auditNFOFiles()" id="auditBtn">🔍 Audit NFOs</button>
                 <button class="btn btn-secondary" onclick="clearOutput()">🗑️ Clear Output</button>
             </div>
@@ -689,12 +634,13 @@
         }
 
         function getSelectedFields() {
-            const fields = ['title', 'season', 'episode', 'displayseason', 'displayepisode',
+            const fields = ['season', 'episode', 'displayseason', 'displayepisode',
                           'showtitle', 'plot', 'aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
-            return fields.filter(field => {
+            const selected = fields.filter(field => {
                 const checkbox = document.getElementById(`field_${field}`);
                 return checkbox && checkbox.checked;
             });
+            return ['title', ...selected]; // title is always included
         }
 
         function extractEpisodeNumber(filename) {
@@ -963,7 +909,6 @@
                 const value = getOptionalFieldValue(field);
                 if (value === null) continue;
 
-                const fieldAction = document.getElementById(`${field}AmendAction`)?.value || 'replace';
                 const tagRegex = new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i');
                 const newTag = `<${field}>${value}</${field}>`;
                 const match = content.match(tagRegex);
@@ -972,13 +917,9 @@
                     const existingValue = match[1].trim();
                     const isBlank = existingValue === '';
                     const isPlaceholder = FIELD_PLACEHOLDERS[field] && existingValue === FIELD_PLACEHOLDERS[field];
-
-                    if (isBlank || isPlaceholder || fieldAction === 'replace') {
-                        content = content.replace(tagRegex, newTag);
-                        const reason = isBlank ? ' (was empty)' : isPlaceholder ? ' (was placeholder)' : '';
-                        actions.push(`replaced <${field}>${reason}`);
-                    }
-                    // else: skip and value is real — leave untouched
+                    const reason = isBlank ? ' (was empty)' : isPlaceholder ? ' (was placeholder)' : '';
+                    content = content.replace(tagRegex, newTag);
+                    actions.push(`replaced <${field}>${reason}`);
                 } else {
                     content = content.replace('</episodedetails>', `    ${newTag}\n</episodedetails>`);
                     actions.push(`added <${field}>`);
@@ -1127,7 +1068,7 @@
             }
         }
 
-        async function generateNFOFiles() {
+        async function generateNFOFiles(mode = 'generate') {
             if (!selectedFolderHandle) {
                 alert('Please select a folder first!');
                 return;
@@ -1139,6 +1080,7 @@
 
             dryRunMode = document.getElementById('dryRunCheck').checked;
             generateBtn.disabled = true;
+            document.getElementById('amendBtn').disabled = true;
             progressBar.classList.add('active');
             clearOutput();
             if (dryRunMode) log('PREVIEW MODE — no files will be written', 'warning');
@@ -1149,9 +1091,8 @@
                 const fields = getSelectedFields();
                 const showTitle = document.getElementById('showTitle').value || 'Series Title';
                 const multiShow = document.getElementById('multiShowCheck').checked;
-                const action = document.getElementById('existingFilesAction').value;
-                const amendMode = action === 'amend';
-                const skipExisting = action === 'skip';
+                const amendMode = mode === 'amend';
+                const skipExisting = document.getElementById('existingFilesAction').value === 'skip';
                 const createTvShowNfo = document.getElementById('createTvShowNfo').checked;
 
                 if (fields.length === 0) {
@@ -1214,6 +1155,7 @@
                 log(`Error: ${err.message}`, 'error');
             } finally {
                 generateBtn.disabled = false;
+                document.getElementById('amendBtn').disabled = false;
                 setTimeout(() => {
                     progressBar.classList.remove('active');
                     progressFill.style.width = '0%';
@@ -1221,10 +1163,6 @@
             }
         }
 
-        function updateAmendInfo() {
-            const isAmend = document.getElementById('existingFilesAction').value === 'amend';
-            document.getElementById('amendInfo').style.display = isAmend ? 'block' : 'none';
-        }
 
         function toggleFieldGroup(checkbox, groupId) {
             document.getElementById(groupId).style.display = checkbox.checked ? 'block' : 'none';
@@ -1317,9 +1255,7 @@
                 let amendLogic = '';
                 fieldsToAmend.forEach(field => {
                     const value = getOptionalFieldValue(field);
-                    const fieldAction = document.getElementById(`${field}AmendAction`)?.value || 'replace';
-                    if (fieldAction === 'replace') {
-                        amendLogic += `
+                    amendLogic += `
     # Amend <${field}> (replace if exists, add if absent)
     if grep -qi '<${field}>' "$nfo_file"; then
         sed -i 's|<${field}>[^<]*<\\/${field}>|<${field}>${value}<\\/${field}>|i' "$nfo_file"
@@ -1328,16 +1264,6 @@
         sed -i 's|<\\/episodedetails>|    <${field}>${value}<\\/${field}>\\n<\\/episodedetails>|' "$nfo_file"
         actions="$actions added:<${field}>"
     fi`;
-                    } else {
-                        amendLogic += `
-    # Amend <${field}> (skip if exists, add if absent)
-    if grep -qi '<${field}>' "$nfo_file"; then
-        : # tag already present, skipping
-    else
-        sed -i 's|<\\/episodedetails>|    <${field}>${value}<\\/${field}>\\n<\\/episodedetails>|' "$nfo_file"
-        actions="$actions added:<${field}>"
-    fi`;
-                    }
                 });
 
                 return `#!/bin/bash
