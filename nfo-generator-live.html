@@ -524,27 +524,27 @@
                     <label for="field_plot">Plot</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="field_aired" />
+                    <input type="checkbox" id="field_aired" onchange="toggleFieldGroup(this, 'airedValueGroup')" />
                     <label for="field_aired">Aired Date</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="field_rating" />
+                    <input type="checkbox" id="field_rating" onchange="toggleFieldGroup(this, 'ratingValueGroup')" />
                     <label for="field_rating">Rating</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="field_runtime" />
+                    <input type="checkbox" id="field_runtime" onchange="toggleFieldGroup(this, 'runtimeValueGroup')" />
                     <label for="field_runtime">Runtime</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="field_director" />
+                    <input type="checkbox" id="field_director" onchange="toggleFieldGroup(this, 'directorValueGroup')" />
                     <label for="field_director">Director</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="field_writer" />
+                    <input type="checkbox" id="field_writer" onchange="toggleFieldGroup(this, 'writerValueGroup')" />
                     <label for="field_writer">Writer</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="field_mpaa" />
+                    <input type="checkbox" id="field_mpaa" onchange="toggleFieldGroup(this, 'mpaaValueGroup')" />
                     <label for="field_mpaa">TV Rating</label>
                 </div>
             </div>
@@ -1256,6 +1256,11 @@
             document.getElementById('amendInfo').style.display = isAmend ? 'block' : 'none';
         }
 
+        function toggleFieldGroup(checkbox, groupId) {
+            document.getElementById(groupId).style.display = checkbox.checked ? 'block' : 'none';
+            updateNFOPreview();
+        }
+
         // Check browser compatibility on load
         window.addEventListener('DOMContentLoaded', () => {
             if (!window.showDirectoryPicker) {
@@ -1272,12 +1277,8 @@
             });
             document.getElementById('defaultSeason').addEventListener('input', updateNFOPreview);
             document.getElementById('showTitle').addEventListener('input', updateNFOPreview);
-            // Show/hide value inputs for non-default fields when their checkbox is toggled
-            const nonDefaultFields = ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
-            nonDefaultFields.forEach(field => {
-                document.getElementById(`field_${field}`).addEventListener('change', function() {
-                    document.getElementById(`${field}ValueGroup`).style.display = this.checked ? 'block' : 'none';
-                });
+            // Wire up preview updates for optional field value inputs
+            ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'].forEach(field => {
                 document.getElementById(`default${field.charAt(0).toUpperCase() + field.slice(1)}`).addEventListener('input', updateNFOPreview);
             });
             
