@@ -949,6 +949,15 @@
 
         const OPTIONAL_FIELDS = ['aired', 'rating', 'runtime', 'director', 'writer', 'mpaa'];
 
+        const FIELD_PLACEHOLDERS = {
+            aired:    '2024-01-01',
+            rating:   '8.0',
+            runtime:  '45',
+            director: 'Director Name',
+            writer:   'Writer Name',
+            mpaa:     'TV-PG',
+        };
+
         function getOptionalFieldValue(field) {
             const map = {
                 aired:    () => document.getElementById('defaultAired').value    || '2024-01-01',
@@ -985,15 +994,21 @@
                 if (value === null) continue;
 
                 const fieldAction = document.getElementById(`${field}AmendAction`)?.value || 'replace';
-                const tagRegex = new RegExp(`<${field}>[^<]*<\\/${field}>`, 'i');
+                const tagRegex = new RegExp(`<${field}>([^<]*)<\\/${field}>`, 'i');
                 const newTag = `<${field}>${value}</${field}>`;
+                const match = content.match(tagRegex);
 
-                if (tagRegex.test(content)) {
-                    if (fieldAction === 'replace') {
+                if (match) {
+                    const existingValue = match[1].trim();
+                    const isBlank = existingValue === '';
+                    const isPlaceholder = FIELD_PLACEHOLDERS[field] && existingValue === FIELD_PLACEHOLDERS[field];
+
+                    if (isBlank || isPlaceholder || fieldAction === 'replace') {
                         content = content.replace(tagRegex, newTag);
-                        actions.push(`replaced <${field}>`);
+                        const reason = isBlank ? ' (was empty)' : isPlaceholder ? ' (was placeholder)' : '';
+                        actions.push(`replaced <${field}>${reason}`);
                     }
-                    // else: skip — tag already present, leave it untouched
+                    // else: skip and value is real — leave untouched
                 } else {
                     content = content.replace('</episodedetails>', `    ${newTag}\n</episodedetails>`);
                     actions.push(`added <${field}>`);
